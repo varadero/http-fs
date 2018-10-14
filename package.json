@@ -13,7 +13,11 @@
     "server"
   ],
   "author": "https://github.com/varadero",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/varadero/http-fs.git"
+  },
+  "license": "MIT",
   "devDependencies": {
     "@types/node": "^10.11.7",
     "tslint": "^5.11.0",
