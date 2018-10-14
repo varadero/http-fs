@@ -19,13 +19,13 @@ Application files can be found in `dist` folder
 This will serve files in current directory available at `http:/localhost`
 
 Command line parameters:
-- `--path` - Root path to be served. Can be either relative or absolute. Defaults to `.` (if not provided, current directory will be served).
+- `--path` - Root path to be served. Can be either relative or absolute. Defaults to `.` (if not provided, current directory will be served). Can contain only Windows-style (%NAME%) environment variables.
 - `--host` - Host or IP on which to listen. Defaults to `127.0.0.1`.
 - `--port` - Port on which to listen. Defaults to 80 if `--use-ssl` is not provided and 443 if `--use-ssl` is provided.
 - `--default-file-name` - The default file name to serve if the URL is a folder. Defaults to `index.html`. To switch off default file serving, set it to empty string inside quotes - `--default-file-name ""`
 - `--use-ssl` - If provided, files will be served over HTTPS
-- `--ssl-cert-file` - Points to a file containing the certificate. Required when `--use-ssl` is provided.
-- `--ssl-key-file` - Points to a file containing the certificate key. Required when `--use-ssl` is provided.
+- `--ssl-cert-file` - Points to a file containing the certificate. Required when `--use-ssl` is provided. Can contain environment variables.
+- `--ssl-key-file` - Points to a file containing the certificate key. Required when `--use-ssl` is provided. Can contain environment variables.
 - `--mime-map` - JSON (special characters like double quotes must be escaped - `\"`) representing MIME map of file extensions (without the dot in front of the extension) and HTTP Content-Type header value. The entries in the default MIME map with the same key as these provided in `--mime-map` will be overwritten. Defaults to empty JSON. Default MIME map contains the following entries:
 
 ```
@@ -45,8 +45,6 @@ woff2: 'font/woff2'
 ```
 
 Extension that does not exist in the resulting MIME map are served with `Content-Type: application/octet-stream`
-
-All command line parameters that express paths can contain enviroment variables like %HOMEPATH% (Windows) or $HOME (Linux).
 
 ## Samples
 - Serve at `http://localhost` with default file `index.html`:

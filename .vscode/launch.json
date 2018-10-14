@@ -8,14 +8,14 @@
             "type": "node",
             "request": "launch",
             "name": "Server",
-            "cwd": "${workspaceFolder}\\dist\\",
+            // "cwd": "${workspaceFolder}\\dist\\",
             "program": "${workspaceFolder}\\dist\\index.js",
             "outFiles": [
                 "${workspaceFolder}/dist/*.js"
             ],
             "args": [
                 "--path",
-                "./dist",
+                "%HTTP_FS_SERVE_PATH%",
                 "//--default-file-name",
                 "",
                 "//--use-ssl",

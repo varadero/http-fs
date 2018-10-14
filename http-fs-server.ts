@@ -63,9 +63,13 @@ export class HttpFsServer {
             return this.respondNotFound(response);
         }
 
-        let fileReadStream: fs.ReadStream | undefined;
+        let fileReadStream: fs.ReadStream;
 
         request.on('error', () => {
+            this.closeReadStream(fileReadStream);
+        });
+
+        request.on('close', () => {
             this.closeReadStream(fileReadStream);
         });
 
@@ -73,8 +77,10 @@ export class HttpFsServer {
             this.closeReadStream(fileReadStream);
         });
 
-        const urlPath = url.parse(request.url || '').path || '';
-        let desiredFile = path.join(this.basePath, urlPath);
+        const requestUrl = request.url || '';
+        const urlPath = url.parse(requestUrl).path || '';
+        const decodedUrl = decodeURI(urlPath);
+        let desiredFile = path.join(this.basePath, decodedUrl);
         fs.stat(desiredFile, (err, stats) => {
             if (err) {
                 this.closeReadStream(fileReadStream);
@@ -87,7 +93,7 @@ export class HttpFsServer {
             if (stats.isDirectory()) {
                 desiredFile = path.join(desiredFile, this.config.defaultFileName);
             }
-            fileReadStream = fs.createReadStream(desiredFile);
+            fileReadStream = this.createFileReadStream(desiredFile);
             response.setHeader('Content-Type', this.getMimeType(path.extname(desiredFile)));
             fileReadStream.on('error', (fileReadErr: Error) => {
                 this.closeReadStream(fileReadStream);
@@ -100,11 +106,13 @@ export class HttpFsServer {
                     this.respondInternalServerError(response);
                 }
             });
-            fileReadStream.on('end', () => {
-                this.closeReadStream(fileReadStream);
-            });
             fileReadStream.pipe(response);
         });
+    }
+
+    private createFileReadStream(filePath: string): fs.ReadStream {
+        const stream = fs.createReadStream(filePath);
+        return stream;
     }
 
     private closeReadStream(stream?: fs.ReadStream): void {

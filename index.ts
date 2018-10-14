@@ -3,7 +3,7 @@ import { HttpFsServer, IServerConfig } from './http-fs-server';
 export class App {
 
     async start(): Promise<HttpFsServer> {
-        const args = process.argv.splice(process.execArgv.length + 2);
+        const args = process.argv.slice(2);
         const appConfig = this.getConfig(args);
         const serverConfig = this.createServerConfigWithDefaults(appConfig.serverConfig);
         const httpFsServer = new HttpFsServer(serverConfig);
@@ -18,7 +18,7 @@ export class App {
         for (let i = 0; i < args.length; i++) {
             const arg = args[i];
             if (arg === '--path') {
-                config.serverConfig.path = args[++i];
+                config.serverConfig.path = this.resolveEnvironmentVariables(args[++i]);
             } else if (arg === '--default-file-name') {
                 config.serverConfig.defaultFileName = args[++i];
             } else if (arg === '--use-ssl') {
@@ -52,6 +52,16 @@ export class App {
             useSsl: sourceConfig.useSsl || false
         };
         return config;
+    }
+
+    private resolveEnvironmentVariables(value: string): string {
+        if (!value) {
+            return value;
+        }
+        const replaced = value.replace(/%([^%]+)%/g, (foundSubstring: string, ...args: any[]) => {
+            return <string>process.env[args[0]];
+        });
+        return replaced;
     }
 }
 

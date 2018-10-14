@@ -18,7 +18,8 @@
         "member-access": [
             true,
             "no-public"
-        ]
+        ],
+        "object-literal-shorthand": false
     },
     "rulesDirectory": []
 }
