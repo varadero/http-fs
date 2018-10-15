@@ -51,6 +51,22 @@ Extension that does not exist in the resulting MIME map are served with `Content
 
 `node index.js`
 
+- Serve absolutely specified directory
+
+`node --path "c:/some/path/to/web files"`
+
+- Serve relatively specified directory
+
+`node --path ./dist`
+
+`node --path ../../webapp`
+
+- Serve with Windows-style envionment variable in the path
+
+`node --path %WEBAPP_FOLDER%`
+
+`node --path ../../webapps/%WEBAPP_NAME%/dist`
+
 - Serve without default file so trying to access a folder will result in `HTTP 404 Not Found`:
 
 `node index.js --default-file-name ""`
