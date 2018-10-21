@@ -22,7 +22,7 @@ export class HttpFsServer {
      */
     async start(): Promise<https.Server | http.Server> {
         const cfg = this.config;
-        this.basePath = path.resolve(cfg.path);
+        this.basePath = cfg.path; // path.resolve(cfg.path);
         if (cfg.useSsl) {
             // In case we need HTTPS, we must create server options by loading certificate files
             const httpsServerOptions = <https.ServerOptions>{
@@ -78,8 +78,8 @@ export class HttpFsServer {
         });
 
         const requestUrl = request.url || '';
-        const urlPath = url.parse(requestUrl).path || '';
-        const decodedUrl = decodeURI(urlPath);
+        const urlPathName = url.parse(requestUrl).pathname || '';
+        const decodedUrl = decodeURI(urlPathName);
         let desiredFile = path.join(this.basePath, decodedUrl);
         fs.stat(desiredFile, (err, stats) => {
             if (err) {
