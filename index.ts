@@ -1,14 +1,16 @@
+import { AddressInfo } from 'net';
+
 import { HttpFsServer, IServerConfig } from './http-fs-server';
 
 export class App {
 
-    async start(): Promise<HttpFsServer> {
+    async start(): Promise<{ httpFsServer: HttpFsServer, address: AddressInfo }> {
         const args = process.argv.slice(2);
         const appConfig = this.getConfig(args);
         const serverConfig = this.createServerConfigWithDefaults(appConfig.serverConfig);
         const httpFsServer = new HttpFsServer(serverConfig);
-        await httpFsServer.start();
-        return httpFsServer;
+        const httpServer = await httpFsServer.start();
+        return { httpFsServer: httpFsServer, address: httpServer.address() as AddressInfo };
     }
 
     private getConfig(args: string[]): IAppConfig {
@@ -66,7 +68,9 @@ export class App {
 }
 
 const app = new App();
-app.start().catch(err => {
+app.start().then(obj => {
+    logMessage(`Listening on ${obj.address.address}:${obj.address.port}`);
+}).catch(err => {
     logError('Start failed: ', err);
 });
 
@@ -78,6 +82,10 @@ function logError(text: string, err?: Error): void {
         errStack = err.stack || '';
     }
     process.stderr.write(`${text}-${errMessage}-${errStack}\n`);
+}
+
+function logMessage(text: string): void {
+    process.stdout.write(`${text}\n`);
 }
 
 interface IAppConfig {
