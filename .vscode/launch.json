@@ -29,6 +29,8 @@
                 // "80",
                 // "--mime-map-file",
                 // "mime-map.json"
+                // "--mime-map",
+                // "{\".\":\"\"}"
             ]
         }
     ]

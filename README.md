@@ -41,8 +41,8 @@ Command line parameters:
     "css": "text/css",
     "html": "text/html",
     "ico": "image/x-icon",
-    "jpg": "image/jpeg",
     "jpeg": "image/jpeg",
+    "jpg": "image/jpeg",
     "js": "application/javascript",
     "json": "application/json",
     "otf": "font/otf",
@@ -50,11 +50,16 @@ Command line parameters:
     "ttf": "font/ttf",
     "txt": "text/plain",
     "woff": "font/woff",
-    "woff2": "font/woff2"
+    "woff2": "font/woff2",
+    ".": "application/octet-stream",
+    "*": "application/octet-stream"
 }
 ```
-
-Extension that does not exist in the resulting MIME map are served with `Content-Type: application/octet-stream`
+### MIME map specifics
+- Files without extensions are referenced with `.` map
+- File extensions not specified are referenced with `*` map
+- All file extensions that map to empty content type will not be served (`404 Not Found` will be returned). The logic for finding content type is the following: If the file extension exists in the mapping - use its content type, if it doesn't exists - use content type specified in `*` map
+- If all not specified file extesions must be disabled, set `*` map to empty string. This will constrain http-fs to serve only file extensions specified in the MIME map (which does not map to empty strings)
 
 ## Samples
 
@@ -98,4 +103,10 @@ Extension that does not exist in the resulting MIME map are served with `Content
 
 `node path/to/http-fs/dist/index.js --mime-map "{\"js\":\"text/plain\",\"htm\":\"text/html\"}"`
 
-Setting MIME map value to an empty string will serve its file extension as the default `Content-Type: application/octet-stream`
+-Serve with MIME map disabling `ttf` files (`"ttf":""`)
+
+`node path/to/http-fs/dist/index.js --mime-map "{\"ttf\":\"\"}"`
+
+-Serve with MIME map disabling all non-specified files (`"*":""`)
+
+`node path/to/http-fs/dist/index.js --mime-map "{\"*\":\"\"}"`

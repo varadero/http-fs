@@ -8,7 +8,6 @@ export class HttpFsServer {
     private httpServer: https.Server | http.Server | null = null;
     private basePath = '';
     private mimeMap: { [key: string]: string } = {};
-    private defaultMimeType = 'application/octet-stream';
 
     /**
      * Creates new instance using provided configuration
@@ -93,8 +92,14 @@ export class HttpFsServer {
             if (stats.isDirectory()) {
                 desiredFile = path.join(desiredFile, this.config.defaultFileName);
             }
+            const mimeType = this.getMimeType(path.extname(desiredFile));
+            if (!mimeType) {
+                // This file extension is not allowed
+                this.respondNotFound(response);
+                return;
+            }
             fileReadStream = this.createFileReadStream(desiredFile);
-            response.setHeader('Content-Type', this.getMimeType(path.extname(desiredFile)));
+            response.setHeader('Content-Type', mimeType);
             fileReadStream.on('error', (fileReadErr: Error) => {
                 this.closeReadStream(fileReadStream);
                 if ((<any>fileReadErr).code === 'ENOENT') {
@@ -122,12 +127,14 @@ export class HttpFsServer {
     }
 
     private getMimeType(fileExtension: string): string {
-        if (!fileExtension) {
-            return this.defaultMimeType;
+        fileExtension = fileExtension || '';
+        let ext = fileExtension.toLowerCase().substring(1);
+        if (ext === '') {
+            // Files without extensions will map to . map
+            ext = '.';
         }
-        const lowercasedNoDot = fileExtension.toLowerCase().substring(1);
-        const mimeType = this.mimeMap[lowercasedNoDot] || this.defaultMimeType;
-        return mimeType;
+        const contentType = this.mimeMap.hasOwnProperty(ext) ? this.mimeMap[ext] : this.mimeMap['*'];
+        return contentType;
     }
 
     private isHttpMethodSupported(httpMethod?: string): boolean {
@@ -156,20 +163,23 @@ export class HttpFsServer {
 
     private createMimeMap(overwrites: { [key: string]: string }): { [key: string]: string } {
         const map: { [key: string]: string } = {
-            css: 'text/css',
-            html: 'text/html',
-            ico: 'image/x-icon',
-            jpeg: 'image/jpeg',
-            js: 'application/javascript',
-            json: 'application/json',
-            otf: 'font/otf',
-            png: 'image/png',
-            ttf: 'font/ttf',
-            txt: 'text/plain',
-            woff: 'font/woff',
-            woff2: 'font/woff2'
+            'css': 'text/css',
+            'html': 'text/html',
+            'ico': 'image/x-icon',
+            'jpeg': 'image/jpeg',
+            'jpg': 'image/jpeg',
+            'js': 'application/javascript',
+            'json': 'application/json',
+            'otf': 'font/otf',
+            'png': 'image/png',
+            'ttf': 'font/ttf',
+            'txt': 'text/plain',
+            'woff': 'font/woff',
+            'woff2': 'font/woff2',
+            // tslint:disable-next-line:object-literal-sort-keys
+            '.': 'application/octet-stream',
+            '*': 'application/octet-stream'
         };
-        map.jpg = map.jpeg;
 
         if (overwrites) {
             Object.assign(map, overwrites);
