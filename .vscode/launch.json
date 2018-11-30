@@ -16,17 +16,19 @@
             "args": [
                 "--path",
                 "%HTTP_FS_SERVE_PATH%",
-                "//--default-file-name",
-                "",
-                "//--use-ssl",
-                "//--ssl-cert-file",
-                "//./path/to/cert.pem",
-                "//--ssl-key-file",
-                "//./path/to/key.pem",
-                "//--host",
-                "//127.0.0.1",
-                "//--port",
-                "//80"
+                // "--default-file-name",
+                // "",
+                // "--use-ssl",
+                // "--ssl-cert-file",
+                // "./path/to/cert.pem",
+                // "--ssl-key-file",
+                // "./path/to/key.pem",
+                // "--host",
+                // "127.0.0.1",
+                // "--port",
+                // "80",
+                // "--mime-map-file",
+                // "mime-map.json"
             ]
         }
     ]

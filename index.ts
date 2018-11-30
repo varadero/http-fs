@@ -1,3 +1,4 @@
+import { readFileSync } from 'fs';
 import { AddressInfo } from 'net';
 
 import { HttpFsServer, IServerConfig } from './http-fs-server';
@@ -35,6 +36,11 @@ export class App {
                 config.serverConfig.port = +args[++i];
             } else if (arg === '--mime-map') {
                 config.serverConfig.mimeMap = JSON.parse(args[++i]);
+            } else if (arg === '--mime-map-file') {
+                const mimeMapFile = this.resolveEnvironmentVariables(args[++i]);
+                config.serverConfig.mimeMap = JSON.parse(readFileSync(mimeMapFile).toString());
+            } else {
+                throw new Error(`Unknown argument ${arg}`);
             }
         }
         return config;
@@ -81,7 +87,7 @@ function logError(text: string, err?: Error): void {
         errMessage = err.message;
         errStack = err.stack || '';
     }
-    process.stderr.write(`${text}-${errMessage}-${errStack}\n`);
+    process.stderr.write(`${text} ${errMessage} ${errStack}\n`);
 }
 
 function logMessage(text: string): void {

@@ -33,22 +33,25 @@ Command line parameters:
 - `--use-ssl` - If provided, files will be served over HTTPS
 - `--ssl-cert-file` - Points to a file containing the certificate. Required when `--use-ssl` is provided. Can contain environment variables.
 - `--ssl-key-file` - Points to a file containing the certificate key. Required when `--use-ssl` is provided. Can contain environment variables.
+- `--mime-map-file` - Points to a JSON file containing MIME map. Can contain only Windows-style (%NAME%) environment variables.
 - `--mime-map` - JSON (special characters like double quotes must be escaped - `\"`) representing MIME map of file extensions (without the dot in front of the extension) and HTTP Content-Type header value. The entries in the default MIME map with the same key as these provided in `--mime-map` will be overwritten. Defaults to empty JSON. Default MIME map contains the following entries:
 
-```
-css: "text/css",
-html: "text/html",
-ico: "image/x-icon",
-jpg: "image/jpeg",
-jpeg: "image/jpeg",
-js: "application/javascript",
-json: "application/json",
-otf: "font/otf",
-png: "image/png",
-ttf: "font/ttf",
-txt: "text/plain",
-woff: "font/woff",
-woff2: "font/woff2"
+```json
+{
+    "css": "text/css",
+    "html": "text/html",
+    "ico": "image/x-icon",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "js": "application/javascript",
+    "json": "application/json",
+    "otf": "font/otf",
+    "png": "image/png",
+    "ttf": "font/ttf",
+    "txt": "text/plain",
+    "woff": "font/woff",
+    "woff2": "font/woff2"
+}
 ```
 
 Extension that does not exist in the resulting MIME map are served with `Content-Type: application/octet-stream`
@@ -87,7 +90,11 @@ Extension that does not exist in the resulting MIME map are served with `Content
 
 `node path/to/http-fs/dist/index.js --use-ssl --ssl-cert-file "C:\some path\to\certificate files\cert.pem" --ssl-key-file "C:\some path\to\certificate files\key.pem"`
 
-- Serve with MIME map overwrites (`js:text/plain` overwriting exiting `js:application/javascript` and added `htm:text/html`) 
+- Serve with MIME map overwrites provided as JSON file
+
+`node path/to/http-fs/dist/index.js --mime-map-file path/to/mime-map.json`
+
+- Serve with MIME map overwrites provided as argument (`js:text/plain` overwriting exiting `js:application/javascript` and added `htm:text/html`) 
 
 `node path/to/http-fs/dist/index.js --mime-map "{\"js\":\"text/plain\",\"htm\":\"text/html\"}"`
 
