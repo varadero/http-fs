@@ -17,6 +17,9 @@
     "type": "git",
     "url": "https://github.com/varadero/http-fs.git"
   },
+  "bugs": {
+    "url": "https://github.com/varadero/http-fs/issues"
+  },
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^10.11.7",

@@ -35,6 +35,7 @@ Command line parameters:
 - `--ssl-key-file` - Points to a file containing the certificate key. Required when `--use-ssl` is provided. Can contain environment variables.
 - `--mime-map-file` - Points to a JSON file containing MIME map. Can contain only Windows-style (%NAME%) environment variables.
 - `--mime-map` - JSON (special characters like double quotes must be escaped - `\"`) representing MIME map of file extensions (without the dot in front of the extension) and HTTP Content-Type header value. The entries in the default MIME map with the same key as these provided in `--mime-map` will be overwritten. Defaults to empty JSON. Default MIME map contains the following entries:
+- `--log-events` - Logs some of the request and response events
 
 ```json
 {
@@ -63,9 +64,9 @@ Command line parameters:
 
 ## Samples
 
-- Serve at `http://localhost` with default file `index.html`:
+- Serve path `./dist` at `http://localhost` with default file `index.html` with sample log output:
 
-`node path/to/http-fs/dist/index.js`
+`node path/to/http-fs/dist/index.js --path ./dist --log-events`
 
 - Serve absolutely specified directory
 

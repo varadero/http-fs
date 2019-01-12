@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as http from 'http';
 import * as https from 'https';
@@ -5,6 +6,9 @@ import * as path from 'path';
 import * as url from 'url';
 
 export class HttpFsServer {
+
+    eventEmitter = new EventEmitter();
+
     private httpServer: https.Server | http.Server | null = null;
     private basePath = '';
     private mimeMap: { [key: string]: string } = {};
@@ -55,6 +59,9 @@ export class HttpFsServer {
     }
 
     private requestCallback(request: http.IncomingMessage, response: http.ServerResponse): void {
+        const startTime = Date.now();
+        this.emitRequestArrived(request, response);
+
         if (!this.isHttpMethodSupported(request.method)) {
             return this.respondMethodNotAllowed(response);
         }
@@ -76,6 +83,11 @@ export class HttpFsServer {
             this.closeReadStream(fileReadStream);
         });
 
+        response.on('finish', () => {
+            const endTime = Date.now();
+            this.emitResponseSent(request, response, endTime - startTime);
+        });
+
         const requestUrl = request.url || '';
         const urlPathName = url.parse(requestUrl).pathname || '';
         const decodedUrl = decodeURI(urlPathName);
@@ -92,12 +104,14 @@ export class HttpFsServer {
             if (stats.isDirectory()) {
                 desiredFile = path.join(desiredFile, this.config.defaultFileName);
             }
+
             const mimeType = this.getMimeType(path.extname(desiredFile));
             if (!mimeType) {
                 // This file extension is not allowed
                 this.respondNotFound(response);
                 return;
             }
+            this.emitFileResolved(desiredFile, mimeType);
             fileReadStream = this.createFileReadStream(desiredFile);
             response.setHeader('Content-Type', mimeType);
             fileReadStream.on('error', (fileReadErr: Error) => {
@@ -161,7 +175,7 @@ export class HttpFsServer {
         response.end('Internal Server Error');
     }
 
-    private createMimeMap(overwrites: { [key: string]: string }): { [key: string]: string } {
+    private createMimeMap(overwrites?: { [key: string]: string }): { [key: string]: string } {
         const map: { [key: string]: string } = {
             'css': 'text/css',
             'html': 'text/html',
@@ -186,6 +200,27 @@ export class HttpFsServer {
         }
         return map;
     }
+
+    private emitRequestArrived(request: http.IncomingMessage, response: http.ServerResponse): void {
+        this.eventEmitter.emit(EventName.requestArrived, <IRequestArrivedEventArgs>{
+            request: request,
+            response: response
+        });
+    }
+    private emitFileResolved(filePath: string, contentType: string): void {
+        this.eventEmitter.emit(EventName.fileResolved, <IFileResolvedEventArgs>{
+            contentType: contentType,
+            path: filePath
+        });
+    }
+
+    private emitResponseSent(request: http.IncomingMessage, response: http.ServerResponse, duration: number): void {
+        this.eventEmitter.emit(EventName.reponseSent, <IResponseSent>{
+            duration: duration,
+            request: request,
+            response: response
+        });
+    }
 }
 
 export interface IServerConfig {
@@ -196,5 +231,27 @@ export interface IServerConfig {
     useSsl: boolean;
     sslCertFile: string;
     sslKeyFile: string;
-    mimeMap: { [key: string]: string };
+    mimeMap?: { [key: string]: string };
+}
+
+export const enum EventName {
+    requestArrived = 'request-arrived',
+    fileResolved = 'file-resolved',
+    reponseSent = 'reponse-sent'
+}
+
+export interface IRequestArrivedEventArgs {
+    request: http.IncomingMessage;
+    response: http.ServerResponse;
+}
+
+export interface IFileResolvedEventArgs {
+    path: string;
+    contentType: string;
+}
+
+export interface IResponseSent {
+    request: http.IncomingMessage;
+    response: http.ServerResponse;
+    duration: number;
 }

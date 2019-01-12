@@ -1,7 +1,10 @@
+import { EventEmitter } from 'events';
 import { readFileSync } from 'fs';
 import { AddressInfo } from 'net';
 
-import { HttpFsServer, IServerConfig } from './http-fs-server';
+import {
+    EventName, HttpFsServer, IFileResolvedEventArgs, IRequestArrivedEventArgs, IResponseSent, IServerConfig
+} from './http-fs-server';
 
 export class App {
 
@@ -39,6 +42,8 @@ export class App {
             } else if (arg === '--mime-map-file') {
                 const mimeMapFile = this.resolveEnvironmentVariables(args[++i]);
                 config.serverConfig.mimeMap = JSON.parse(readFileSync(mimeMapFile).toString());
+            } else if (arg === '--log-events') {
+                config.logEvents = true;
             } else {
                 throw new Error(`Unknown argument ${arg}`);
             }
@@ -75,10 +80,28 @@ export class App {
 
 const app = new App();
 app.start().then(obj => {
+    if (obj.httpFsServer.eventEmitter) {
+        attachToEvents(obj.httpFsServer.eventEmitter);
+    }
     logMessage(`Listening on ${obj.address.address}:${obj.address.port}`);
 }).catch(err => {
     logError('Start failed: ', err);
 });
+
+function attachToEvents(httpFsServerEventEmitter: EventEmitter): void {
+    httpFsServerEventEmitter.on(EventName.requestArrived, data => {
+        const eventData = <IRequestArrivedEventArgs>data;
+        logMessage(`${EventName.requestArrived} : ${eventData.request.method} ${eventData.request.url}`);
+    });
+    httpFsServerEventEmitter.on(EventName.fileResolved, data => {
+        const eventData = <IFileResolvedEventArgs>data;
+        logMessage(`${EventName.fileResolved} : ${eventData.path} (${eventData.contentType})`);
+    });
+    httpFsServerEventEmitter.on(EventName.reponseSent, data => {
+        const eventData = <IResponseSent>data;
+        logMessage(`${EventName.reponseSent} : finished for ${eventData.duration} ms : ${eventData.request.url}`);
+    });
+}
 
 function logError(text: string, err?: Error): void {
     let errMessage = '';
@@ -91,9 +114,15 @@ function logError(text: string, err?: Error): void {
 }
 
 function logMessage(text: string): void {
-    process.stdout.write(`${text}\n`);
+    process.stdout.write(`${getDateAsString()} : ${text}\n`);
+}
+
+function getDateAsString(): string {
+    const date = new Date().toISOString();
+    return date;
 }
 
 interface IAppConfig {
     serverConfig: IServerConfig;
+    logEvents: boolean;
 }
