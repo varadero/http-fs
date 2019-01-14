@@ -8,16 +8,20 @@ import {
 
 export class App {
 
-    async start(): Promise<{ httpFsServer: HttpFsServer, address: AddressInfo }> {
+    async start(): Promise<{ httpFsServer: HttpFsServer, address: AddressInfo, appConfig: IAppConfig }> {
         const args = process.argv.slice(2);
-        const appConfig = this.getConfig(args);
+        const appConfig = this.createConfig(args);
         const serverConfig = this.createServerConfigWithDefaults(appConfig.serverConfig);
         const httpFsServer = new HttpFsServer(serverConfig);
         const httpServer = await httpFsServer.start();
-        return { httpFsServer: httpFsServer, address: httpServer.address() as AddressInfo };
+        return {
+            address: httpServer.address() as AddressInfo,
+            appConfig: appConfig,
+            httpFsServer: httpFsServer
+        };
     }
 
-    private getConfig(args: string[]): IAppConfig {
+    private createConfig(args: string[]): IAppConfig {
         const config = <IAppConfig>{
             serverConfig: <IServerConfig>{}
         };
@@ -80,7 +84,7 @@ export class App {
 
 const app = new App();
 app.start().then(obj => {
-    if (obj.httpFsServer.eventEmitter) {
+    if (obj.appConfig.logEvents) {
         attachToEvents(obj.httpFsServer.eventEmitter);
     }
     logMessage(`Listening on ${obj.address.address}:${obj.address.port}`);
@@ -91,15 +95,18 @@ app.start().then(obj => {
 function attachToEvents(httpFsServerEventEmitter: EventEmitter): void {
     httpFsServerEventEmitter.on(EventName.requestArrived, data => {
         const eventData = <IRequestArrivedEventArgs>data;
-        logMessage(`${EventName.requestArrived} : ${eventData.request.method} ${eventData.request.url}`);
+        logMessage(`${EventName.requestArrived} : ${eventData.request.method} ${eventData.request.url}` +
+            ` (requestId ${eventData.requestId})`);
     });
     httpFsServerEventEmitter.on(EventName.fileResolved, data => {
         const eventData = <IFileResolvedEventArgs>data;
-        logMessage(`${EventName.fileResolved} : ${eventData.path} (${eventData.contentType})`);
+        logMessage(`${EventName.fileResolved} : ${eventData.path} (${eventData.contentType})` +
+            ` (requestId ${eventData.requestId})`);
     });
     httpFsServerEventEmitter.on(EventName.reponseSent, data => {
         const eventData = <IResponseSent>data;
-        logMessage(`${EventName.reponseSent} : finished for ${eventData.duration} ms : ${eventData.request.url}`);
+        logMessage(`${EventName.reponseSent} : finished for ${eventData.duration} ms : ${eventData.request.url}` +
+            ` (requestId ${eventData.requestId})`);
     });
 }
 

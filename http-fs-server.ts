@@ -12,6 +12,7 @@ export class HttpFsServer {
     private httpServer: https.Server | http.Server | null = null;
     private basePath = '';
     private mimeMap: { [key: string]: string } = {};
+    private totalRequests = 0;
 
     /**
      * Creates new instance using provided configuration
@@ -59,8 +60,10 @@ export class HttpFsServer {
     }
 
     private requestCallback(request: http.IncomingMessage, response: http.ServerResponse): void {
+        this.totalRequests++;
+        const requestId = this.totalRequests;
         const startTime = Date.now();
-        this.emitRequestArrived(request, response);
+        this.emitRequestArrived(request, response, requestId);
 
         if (!this.isHttpMethodSupported(request.method)) {
             return this.respondMethodNotAllowed(response);
@@ -85,7 +88,7 @@ export class HttpFsServer {
 
         response.on('finish', () => {
             const endTime = Date.now();
-            this.emitResponseSent(request, response, endTime - startTime);
+            this.emitResponseSent(request, response, endTime - startTime, requestId);
         });
 
         const requestUrl = request.url || '';
@@ -111,7 +114,7 @@ export class HttpFsServer {
                 this.respondNotFound(response);
                 return;
             }
-            this.emitFileResolved(desiredFile, mimeType);
+            this.emitFileResolved(desiredFile, mimeType, requestId);
             fileReadStream = this.createFileReadStream(desiredFile);
             response.setHeader('Content-Type', mimeType);
             fileReadStream.on('error', (fileReadErr: Error) => {
@@ -201,25 +204,36 @@ export class HttpFsServer {
         return map;
     }
 
-    private emitRequestArrived(request: http.IncomingMessage, response: http.ServerResponse): void {
-        this.eventEmitter.emit(EventName.requestArrived, <IRequestArrivedEventArgs>{
+    private emitRequestArrived(request: http.IncomingMessage, response: http.ServerResponse, requestId: number): void {
+        const args: IRequestArrivedEventArgs = {
             request: request,
+            requestId: requestId,
             response: response
-        });
+        };
+        this.eventEmitter.emit(EventName.requestArrived, args);
     }
-    private emitFileResolved(filePath: string, contentType: string): void {
-        this.eventEmitter.emit(EventName.fileResolved, <IFileResolvedEventArgs>{
+    private emitFileResolved(filePath: string, contentType: string, requestId: number): void {
+        const args: IFileResolvedEventArgs = {
             contentType: contentType,
-            path: filePath
-        });
+            path: filePath,
+            requestId: requestId
+        };
+        this.eventEmitter.emit(EventName.fileResolved, args);
     }
 
-    private emitResponseSent(request: http.IncomingMessage, response: http.ServerResponse, duration: number): void {
-        this.eventEmitter.emit(EventName.reponseSent, <IResponseSent>{
+    private emitResponseSent(
+        request: http.IncomingMessage,
+        response: http.ServerResponse,
+        duration: number,
+        requestId: number
+    ): void {
+        const args: IResponseSent = {
             duration: duration,
             request: request,
+            requestId: requestId,
             response: response
-        });
+        };
+        this.eventEmitter.emit(EventName.reponseSent, args);
     }
 }
 
@@ -241,16 +255,19 @@ export const enum EventName {
 }
 
 export interface IRequestArrivedEventArgs {
+    requestId: number;
     request: http.IncomingMessage;
     response: http.ServerResponse;
 }
 
 export interface IFileResolvedEventArgs {
+    requestId: number;
     path: string;
     contentType: string;
 }
 
 export interface IResponseSent {
+    requestId: number;
     request: http.IncomingMessage;
     response: http.ServerResponse;
     duration: number;
