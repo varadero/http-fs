@@ -88,6 +88,7 @@ app.start().then(obj => {
         attachToEvents(obj.httpFsServer.eventEmitter);
     }
     logMessage(`Listening on ${obj.address.address}:${obj.address.port}`);
+    logMessage(`Serving path '${obj.appConfig.serverConfig.path}' resolved to '${obj.httpFsServer.resolvedPath}'`);
 }).catch(err => {
     logError('Start failed: ', err);
 });

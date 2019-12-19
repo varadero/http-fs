@@ -8,6 +8,7 @@ import * as url from 'url';
 export class HttpFsServer {
 
     eventEmitter = new EventEmitter();
+    resolvedPath = '';
 
     private httpServer: https.Server | http.Server | null = null;
     private basePath = '';
@@ -26,7 +27,8 @@ export class HttpFsServer {
      */
     async start(): Promise<https.Server | http.Server> {
         const cfg = this.config;
-        this.basePath = cfg.path; // path.resolve(cfg.path);
+        this.basePath = cfg.path;
+        this.resolvedPath = path.resolve(cfg.path);
         if (cfg.useSsl) {
             // In case we need HTTPS, we must create server options by loading certificate files
             const httpsServerOptions = <https.ServerOptions>{
