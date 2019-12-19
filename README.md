@@ -35,8 +35,6 @@ Command line parameters:
 - `--ssl-key-file` - Points to a file containing the certificate key. Required when `--use-ssl` is provided. Can contain environment variables.
 - `--mime-map-file` - Points to a JSON file containing MIME map. Can contain only Windows-style (%NAME%) environment variables.
 - `--mime-map` - JSON (special characters like double quotes must be escaped - `\"`) representing MIME map of file extensions (without the dot in front of the extension) and HTTP Content-Type header value. The entries in the default MIME map with the same key as these provided in `--mime-map` will be overwritten. Defaults to empty JSON. Default MIME map contains the following entries:
-- `--log-events` - Logs some of the request and response events
-
 ```json
 {
     "css": "text/css",
@@ -56,6 +54,8 @@ Command line parameters:
     "*": "application/octet-stream"
 }
 ```
+- `--log-events` - Logs some of the request and response events
+
 ### MIME map specifics
 - Files without extensions are referenced with `.` map
 - File extensions not specified are referenced with `*` map
@@ -104,10 +104,10 @@ Command line parameters:
 
 `node path/to/http-fs/dist/index.js --mime-map "{\"js\":\"text/plain\",\"htm\":\"text/html\"}"`
 
--Serve with MIME map disabling `ttf` files (`"ttf":""`)
+- Serve with MIME map disabling `ttf` files (`"ttf":""`)
 
 `node path/to/http-fs/dist/index.js --mime-map "{\"ttf\":\"\"}"`
 
--Serve with MIME map disabling all non-specified files (`"*":""`)
+- Serve with MIME map disabling all non-specified files (`"*":""`)
 
 `node path/to/http-fs/dist/index.js --mime-map "{\"*\":\"\"}"`
