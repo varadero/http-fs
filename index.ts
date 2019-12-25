@@ -8,17 +8,33 @@ import {
 
 export class App {
 
-    async start(): Promise<{ httpFsServer: HttpFsServer, address: AddressInfo, appConfig: IAppConfig }> {
+    private defaults = {
+        serve: {
+            defaultFileName: 'index.html',
+            host: '127.0.0.1',
+            httpPort: 80,
+            httpsPort: 443,
+            path: '.'
+        },
+        ssl: {
+            sslCertFile: 'cert.pem',
+            sslKeyFile: 'key.pem'
+        }
+    };
+
+    async start(): Promise<IStartResult> {
         const args = process.argv.slice(2);
         const appConfig = this.createConfig(args);
         const serverConfig = this.createServerConfigWithDefaults(appConfig.serverConfig);
         const httpFsServer = new HttpFsServer(serverConfig);
         const httpServer = await httpFsServer.start();
-        return {
+        const result: IStartResult = {
             address: httpServer.address() as AddressInfo,
             appConfig: appConfig,
-            httpFsServer: httpFsServer
+            httpFsServer: httpFsServer,
+            serverConfig: serverConfig
         };
+        return result;
     }
 
     private createConfig(args: string[]): IAppConfig {
@@ -57,15 +73,15 @@ export class App {
 
     private createServerConfigWithDefaults(baseConfig: IServerConfig): IServerConfig {
         const sourceConfig = baseConfig || {};
-        const inferredDefaultPort = sourceConfig.useSsl ? 443 : 80;
+        const inferredDefaultPort = sourceConfig.useSsl ? this.defaults.serve.httpsPort : this.defaults.serve.httpPort;
         const config: IServerConfig = {
-            defaultFileName: sourceConfig.defaultFileName || 'index.html',
-            host: sourceConfig.host || '127.0.0.1',
+            defaultFileName: sourceConfig.defaultFileName || this.defaults.serve.defaultFileName,
+            host: sourceConfig.host || this.defaults.serve.host,
             mimeMap: sourceConfig.mimeMap,
-            path: sourceConfig.path || '.',
+            path: sourceConfig.path || this.defaults.serve.path,
             port: baseConfig.port || inferredDefaultPort,
-            sslCertFile: sourceConfig.sslCertFile || '',
-            sslKeyFile: sourceConfig.sslKeyFile || '',
+            sslCertFile: sourceConfig.sslCertFile || this.defaults.ssl.sslCertFile,
+            sslKeyFile: sourceConfig.sslKeyFile || this.defaults.ssl.sslKeyFile,
             useSsl: sourceConfig.useSsl || false
         };
         return config;
@@ -88,7 +104,9 @@ app.start().then(obj => {
         attachToEvents(obj.httpFsServer.eventEmitter);
     }
     logMessage(`Listening on ${obj.address.address}:${obj.address.port}`);
-    logMessage(`Serving path '${obj.appConfig.serverConfig.path}' resolved to '${obj.httpFsServer.resolvedPath}'`);
+    logMessage(`Serving path '${obj.serverConfig.path}' resolved to '${obj.httpFsServer.resolvedPath}'`);
+    logMessage(`App config ${JSON.stringify(obj.appConfig)}`);
+    logMessage(`Server config ${JSON.stringify(obj.serverConfig)}`);
 }).catch(err => {
     logError('Start failed: ', err);
 });
@@ -133,4 +151,11 @@ function getDateAsString(): string {
 interface IAppConfig {
     serverConfig: IServerConfig;
     logEvents: boolean;
+}
+
+interface IStartResult {
+    httpFsServer: HttpFsServer;
+    address: AddressInfo;
+    appConfig: IAppConfig;
+    serverConfig: IServerConfig;
 }
