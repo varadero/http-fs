@@ -62,6 +62,8 @@ export class App {
             } else if (arg === '--mime-map-file') {
                 const mimeMapFile = this.resolveEnvironmentVariables(args[++i]);
                 config.serverConfig.mimeMap = JSON.parse(readFileSync(mimeMapFile).toString());
+            } else if (arg === '--not-found-file') {
+                config.serverConfig.notFoundFile = this.resolveEnvironmentVariables(args[++i]);
             } else if (arg === '--log-events') {
                 config.logEvents = true;
             } else {
@@ -78,6 +80,7 @@ export class App {
             defaultFileName: sourceConfig.defaultFileName || this.defaults.serve.defaultFileName,
             host: sourceConfig.host || this.defaults.serve.host,
             mimeMap: sourceConfig.mimeMap,
+            notFoundFile: sourceConfig.notFoundFile,
             path: sourceConfig.path || this.defaults.serve.path,
             port: baseConfig.port || inferredDefaultPort,
             sslCertFile: sourceConfig.sslCertFile || this.defaults.ssl.sslCertFile,

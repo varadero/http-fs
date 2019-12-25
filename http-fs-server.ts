@@ -64,18 +64,30 @@ export class HttpFsServer {
     private requestCallback(request: http.IncomingMessage, response: http.ServerResponse): void {
         this.totalRequests++;
         const requestId = this.totalRequests;
-        const startTime = Date.now();
         this.emitRequestArrived(request, response, requestId);
 
         if (!this.isHttpMethodSupported(request.method)) {
             return this.respondMethodNotAllowed(response);
         }
         if (!this.isUrlSafe(request.url)) {
-            return this.respondNotFound(response);
+            return this.respondNotFound(requestId, request, response);
         }
+        this.serveFile(request.url, requestId, request, response);
+    }
 
+    private getDesiredFile(requestUrl?: string): string {
+        requestUrl = requestUrl || '';
+        const urlPathName = url.parse(requestUrl).pathname || '';
+        const decodedUrl = decodeURI(urlPathName);
+        const desiredFile = path.join(this.basePath, decodedUrl);
+        return desiredFile;
+    }
+
+    private serveFile(
+        requestUrl: string | undefined, requestId: number, request: http.IncomingMessage, response: http.ServerResponse
+    ): void {
         let fileReadStream: fs.ReadStream;
-
+        const startTime = Date.now();
         request.on('error', () => {
             this.closeReadStream(fileReadStream);
         });
@@ -92,18 +104,14 @@ export class HttpFsServer {
             const endTime = Date.now();
             this.emitResponseSent(request, response, endTime - startTime, requestId);
         });
-
-        const requestUrl = request.url || '';
-        const urlPathName = url.parse(requestUrl).pathname || '';
-        const decodedUrl = decodeURI(urlPathName);
-        let desiredFile = path.join(this.basePath, decodedUrl);
+        let desiredFile = this.getDesiredFile(requestUrl);
         fs.stat(desiredFile, (err, stats) => {
             if (err) {
                 this.closeReadStream(fileReadStream);
-                return this.respondNotFound(response);
+                return this.respondNotFound(requestId, request, response);
             }
             if (stats.isDirectory() && !this.config.defaultFileName) {
-                return this.respondNotFound(response);
+                return this.respondNotFound(requestId, request, response);
             }
 
             if (stats.isDirectory()) {
@@ -113,7 +121,7 @@ export class HttpFsServer {
             const mimeType = this.getMimeType(path.extname(desiredFile));
             if (!mimeType) {
                 // This file extension is not allowed
-                this.respondNotFound(response);
+                this.respondNotFound(requestId, request, response);
                 return;
             }
             this.emitFileResolved(desiredFile, mimeType, requestId);
@@ -125,7 +133,7 @@ export class HttpFsServer {
                     // File was not found. This could happen if fs.stats was executed on an existing file/directory
                     // but it was later changed to a non existing file before fs.createReadStream is called
                     // It happens if URL is a directory and the default file name was added to it which could not exists
-                    this.respondNotFound(response);
+                    this.respondNotFound(requestId, request, response);
                 } else {
                     this.respondInternalServerError(response);
                 }
@@ -165,7 +173,15 @@ export class HttpFsServer {
         return !urlValue || (urlValue.indexOf('..') === -1);
     }
 
-    private respondNotFound(response: http.ServerResponse): void {
+    private respondNotFound(requestId: number, request: http.IncomingMessage, response: http.ServerResponse): void {
+        if (this.config.notFoundFile) {
+            const fileExists = fs.existsSync(this.config.notFoundFile);
+            if (fileExists) {
+                this.serveFile(this.config.notFoundFile, requestId, request, response);
+                return;
+            }
+        }
+
         response.statusCode = 404;
         response.end('Not Found');
     }
@@ -248,6 +264,7 @@ export interface IServerConfig {
     sslCertFile: string;
     sslKeyFile: string;
     mimeMap?: { [key: string]: string };
+    notFoundFile: string;
 }
 
 export const enum EventName {

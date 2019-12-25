@@ -15,7 +15,8 @@
             ],
             "args": [
                 "--path",
-                "%HTTP_FS_SERVE_PATH%",
+                ".",
+                // "%HTTP_FS_SERVE_PATH%",
                 // "--default-file-name",
                 // "",
                 // "--use-ssl",
