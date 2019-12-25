@@ -3,9 +3,6 @@ Serves files from a given path. Uses Node streams for low memory usage and no de
 
 # Clone
 `git clone https://github.com/varadero/http-fs.git`
-
-Then navigate to its folder:
-
 `cd http-fs`
 
 # Install
@@ -26,9 +23,9 @@ After the application is build, execute this from any folder:
 This will serve files in specified directory in the `--path` parameter.
 
 Command line parameters:
-- `--path` - Root path to be served. Can be either relative or absolute. Defaults to `.` (if not provided, current directory will be served). Can contain only Windows-style (%NAME%) environment variables.
-- `--host` - Host or IP on which to listen. Defaults to `127.0.0.1`.
-- `--port` - Port on which to listen. Defaults to 80 if `--use-ssl` is not provided and 443 if `--use-ssl` is provided.
+- `--path` - Root path to be served. Can be either relative or absolute. Defaults to `.` (if not provided, current directory will be served). Can contain only Windows-style (`%NAME%`) environment variables.
+- `--host` - Host or IP at which to listen. Defaults to `127.0.0.1`.
+- `--port` - Port at which to listen. Defaults to 80 if `--use-ssl` is not provided and 443 if `--use-ssl` is provided.
 - `--default-file-name` - The default file name to serve if the URL is a folder. Defaults to `index.html`. To switch off default file serving, set it to empty string inside quotes - `--default-file-name ""`
 - `--not-found-file` - The file which must be served in case the requested file cannot be found. Can contain environment variables.
 - `--use-ssl` - If provided, files will be served over HTTPS.
@@ -97,11 +94,11 @@ Command line parameters:
 
 `node path/to/http-fs/dist/index.js --host 192.168.0.1 --port 12345`
 
-- Serve with HTTPS using the default files `cert.pem` and `key.pem` in current folder
+- Serve with HTTPS using the default files `cert.pem` and `key.pem` in current folder (you can create `.pem` files using `openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem`)
 
 `node path/to/http-fs/dist/index.js --use-ssl`
 
-- Serve with HTTPS (you can create `.pem` files using `openssl`)
+- Serve with HTTPS specifying certificate `.pem` files
 
 `node path/to/http-fs/dist/index.js --use-ssl --ssl-cert-file "C:\some path\to\certificate files\cert.pem" --ssl-key-file "C:\some path\to\certificate files\key.pem"`
 
