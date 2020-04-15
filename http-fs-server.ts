@@ -199,6 +199,7 @@ export class HttpFsServer {
     private createMimeMap(overwrites?: { [key: string]: string }): { [key: string]: string } {
         const map: { [key: string]: string } = {
             'css': 'text/css',
+            'gif': 'image/gif',
             'html': 'text/html',
             'ico': 'image/x-icon',
             'jpeg': 'image/jpeg',

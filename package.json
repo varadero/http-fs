@@ -21,8 +21,9 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^10.17.11",
-    "tslint": "^5.20.1",
-    "typescript": "^3.7.3"
-  }
+    "@types/node": "^13.11.1",
+    "tslint": "^6.1.1",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {}
 }
