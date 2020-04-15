@@ -37,6 +37,7 @@ Command line parameters:
 ```json
 {
     "css": "text/css",
+    "gif": "image/gif",
     "html": "text/html",
     "ico": "image/x-icon",
     "jpeg": "image/jpeg",
