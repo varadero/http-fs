@@ -3,6 +3,7 @@ Serves files from a given path. Uses Node streams for low memory usage and no de
 
 # Clone
 `git clone https://github.com/varadero/http-fs.git`
+
 `cd http-fs`
 
 # Install
