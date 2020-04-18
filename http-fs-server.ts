@@ -208,6 +208,7 @@ export class HttpFsServer {
             'json': 'application/json',
             'otf': 'font/otf',
             'png': 'image/png',
+            'svg': 'image/svg+xml',
             'ttf': 'font/ttf',
             'txt': 'text/plain',
             'woff': 'font/woff',
