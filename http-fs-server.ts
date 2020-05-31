@@ -23,7 +23,7 @@ export class HttpFsServer {
     }
 
     /**
-     * Starts a HTTP or HTTPS server (depending on the provided configuration in the constructor) an returns it
+     * Starts a HTTP or HTTPS server (depending on the provided configuration in the constructor) and returns it
      */
     async start(): Promise<https.Server | http.Server> {
         const cfg = this.config;
@@ -72,10 +72,10 @@ export class HttpFsServer {
         if (!this.isUrlSafe(request.url)) {
             return this.respondNotFound(requestId, request, response);
         }
-        this.serveFile(request.url, requestId, request, response);
+        this.serveUrl(request.url, requestId, request, response);
     }
 
-    private getDesiredFile(requestUrl?: string): string {
+    private getDesiredPath(requestUrl?: string): string {
         requestUrl = requestUrl || '';
         const urlPathName = url.parse(requestUrl).pathname || '';
         const decodedUrl = decodeURI(urlPathName);
@@ -83,7 +83,7 @@ export class HttpFsServer {
         return desiredFile;
     }
 
-    private serveFile(
+    private serveUrl(
         requestUrl: string | undefined, requestId: number, request: http.IncomingMessage, response: http.ServerResponse
     ): void {
         let fileReadStream: fs.ReadStream;
@@ -104,28 +104,30 @@ export class HttpFsServer {
             const endTime = Date.now();
             this.emitResponseSent(request, response, endTime - startTime, requestId);
         });
-        let desiredFile = this.getDesiredFile(requestUrl);
-        fs.stat(desiredFile, (err, stats) => {
+        let desiredPath = this.getDesiredPath(requestUrl);
+        fs.stat(desiredPath, (err, stats) => {
             if (err) {
                 this.closeReadStream(fileReadStream);
                 return this.respondNotFound(requestId, request, response);
             }
-            if (stats.isDirectory() && !this.config.defaultFileName) {
-                return this.respondNotFound(requestId, request, response);
-            }
-
             if (stats.isDirectory()) {
-                desiredFile = path.join(desiredFile, this.config.defaultFileName);
+                if (this.config.directoryListing) {
+                    return this.respondDirectoryListing(requestId, request, response, desiredPath);
+                }
+                if (!this.config.defaultFileName) {
+                    return this.respondNotFound(requestId, request, response);
+                }
+                desiredPath = path.join(desiredPath, this.config.defaultFileName);
             }
 
-            const mimeType = this.getMimeType(path.extname(desiredFile));
+            const mimeType = this.getMimeType(path.extname(desiredPath));
             if (!mimeType) {
                 // This file extension is not allowed
                 this.respondNotFound(requestId, request, response);
                 return;
             }
-            this.emitFileResolved(desiredFile, mimeType, requestId);
-            fileReadStream = this.createFileReadStream(desiredFile);
+            this.emitFileResolved(desiredPath, mimeType, requestId);
+            fileReadStream = this.createFileReadStream(desiredPath);
             response.setHeader('Content-Type', mimeType);
             fileReadStream.on('error', (fileReadErr: Error) => {
                 this.closeReadStream(fileReadStream);
@@ -173,11 +175,35 @@ export class HttpFsServer {
         return !urlValue || (urlValue.indexOf('..') === -1);
     }
 
+    private respondDirectoryListing(
+        requestId: number, request: http.IncomingMessage, response: http.ServerResponse, directory: string
+    ): void {
+        fs.readdir(directory, (err, files) => {
+            if (err) {
+                return this.respondInternalServerError(response);
+            }
+            const dirEntries: IDirectoryEntry[] = [];
+            for (const file of files) {
+                try {
+                    const entryPath = path.join(directory, file);
+                    const stat = fs.statSync(entryPath);
+                    if (stat.isFile() || stat.isDirectory()) {
+                        dirEntries.push({ path: entryPath, isDirectory: stat.isDirectory() });
+                    }
+                } catch (statErr) {
+                    //
+                }
+            }
+            const html = this.getDirectoryHtml(dirEntries);
+            response.end(html);
+        });
+    }
+
     private respondNotFound(requestId: number, request: http.IncomingMessage, response: http.ServerResponse): void {
         if (this.config.notFoundFile) {
             const fileExists = fs.existsSync(this.config.notFoundFile);
             if (fileExists) {
-                this.serveFile(this.config.notFoundFile, requestId, request, response);
+                this.serveUrl(this.config.notFoundFile, requestId, request, response);
                 return;
             }
         }
@@ -194,6 +220,69 @@ export class HttpFsServer {
     private respondInternalServerError(response: http.ServerResponse): void {
         response.statusCode = 500;
         response.end('Internal Server Error');
+    }
+
+    private escapeForHtmlContent(text: string): string {
+        return text
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    private getEntriesHtml(directoryEntries: IDirectoryEntry[]): string {
+        let html = '<ul class="list">';
+        for (const entry of directoryEntries) {
+            let htmlEscapedName = this.escapeForHtmlContent(entry.path);
+            if (entry.isDirectory) {
+                htmlEscapedName += '/';
+            }
+            const elClass = entry.isDirectory ? 'directory' : 'file';
+            html += `
+            <li class="${elClass}"><a href="${escape(entry.path)}">${htmlEscapedName}</a></li>
+            `;
+        }
+        html += '</ul>';
+        return html;
+    }
+
+    private getDirectoryHtml(directoryEntries: IDirectoryEntry[]): string {
+        const directories = directoryEntries.filter(x => x.isDirectory).sort();
+        const files = directoryEntries.filter(x => !x.isDirectory).sort();
+        let content = '';
+        if (directories.length > 0) {
+            content += '<h2>Folders</h2>';
+            content += this.getEntriesHtml(directories);
+            content += '<hr />';
+        }
+        content += '<h2>Files</h2>'
+        content += this.getEntriesHtml(files);
+        const html = `
+        <!doctype html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <title>Directory listing</title>
+          <base href="/">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body {
+              font-size: larger;
+              font-family: monospace;
+            }
+            .list {
+              list-style-type: decimal;
+              line-height: 2em;
+            }
+          </style>
+        </head>
+        <body>
+        ${content}
+        </body>
+        </html>
+        `;
+        return html;
     }
 
     private createMimeMap(overwrites?: { [key: string]: string }): { [key: string]: string } {
@@ -267,6 +356,7 @@ export interface IServerConfig {
     sslKeyFile: string;
     mimeMap?: { [key: string]: string };
     notFoundFile: string;
+    directoryListing: boolean;
 }
 
 export const enum EventName {
@@ -292,4 +382,9 @@ export interface IResponseSent {
     request: http.IncomingMessage;
     response: http.ServerResponse;
     duration: number;
+}
+
+interface IDirectoryEntry {
+    isDirectory: boolean;
+    path: string;
 }

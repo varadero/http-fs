@@ -32,7 +32,8 @@
                 // "mime-map.json"
                 // "--mime-map",
                 // "{\".\":\"\"}"
-                "--log-events"
+                "--log-events",
+                "--directory-listing"
             ],
             "console": "externalTerminal"
         }

@@ -27,7 +27,8 @@ Command line parameters:
 - `--path` - Root path to be served. Can be either relative or absolute. Defaults to `.` (if not provided, current directory will be served). Can contain only Windows-style (`%NAME%`) environment variables.
 - `--host` - Host or IP at which to listen. Defaults to `127.0.0.1`.
 - `--port` - Port at which to listen. Defaults to 80 if `--use-ssl` is not provided and 443 if `--use-ssl` is provided.
-- `--default-file-name` - The default file name to serve if the URL is a folder. Defaults to `index.html`. To switch off default file serving, set it to empty string inside quotes - `--default-file-name ""`
+- `--directory-listing` - Will show directory content.
+- `--default-file-name` - The default file name to serve if the URL is a folder. Defaults to `index.html`. To switch off default file serving, set it to empty string inside quotes - `--default-file-name ""`. Will be ignored if `--directory-listing` is provided
 - `--not-found-file` - The file which must be served in case the requested file cannot be found. Can contain environment variables.
 - `--use-ssl` - If provided, files will be served over HTTPS.
 - `--ssl-cert-file` - Points to a file containing the certificate. Defaults to `cert.pem`. Can contain environment variables.
@@ -88,6 +89,10 @@ Command line parameters:
 - Serve without default file so trying to access a folder will result in `HTTP 404 Not Found`:
 
 `node path/to/http-fs/dist/index.js --default-file-name ""`
+
+- Serve with directory content listing
+
+`node path/to/http-fs/dist/index.js --directory-listing`
 
 - Serve specified file if requested is not found. Can be used for SPA applications so when the browser is refreshed while at some route URL, the application will be loaded from specified HTML file keeping the URL in the browser
 

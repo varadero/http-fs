@@ -66,6 +66,8 @@ export class App {
                 config.serverConfig.notFoundFile = this.resolveEnvironmentVariables(args[++i]);
             } else if (arg === '--log-events') {
                 config.logEvents = true;
+            } else if (arg === '--directory-listing') {
+                config.serverConfig.directoryListing = true;
             } else {
                 throw new Error(`Unknown argument ${arg}`);
             }
@@ -85,7 +87,8 @@ export class App {
             port: baseConfig.port || inferredDefaultPort,
             sslCertFile: sourceConfig.sslCertFile || this.defaults.ssl.sslCertFile,
             sslKeyFile: sourceConfig.sslKeyFile || this.defaults.ssl.sslKeyFile,
-            useSsl: sourceConfig.useSsl || false
+            useSsl: sourceConfig.useSsl || false,
+            directoryListing: sourceConfig.directoryListing || false
         };
         return config;
     }
