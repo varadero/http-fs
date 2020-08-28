@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { AddressInfo } from 'net';
 
 import {
@@ -28,11 +28,13 @@ export class App {
         const serverConfig = this.createServerConfigWithDefaults(appConfig.serverConfig);
         const httpFsServer = new HttpFsServer(serverConfig);
         const httpServer = await httpFsServer.start();
+        const pathExists = existsSync(httpFsServer.resolvedPath);
         const result: IStartResult = {
             address: httpServer.address() as AddressInfo,
             appConfig: appConfig,
             httpFsServer: httpFsServer,
-            serverConfig: serverConfig
+            serverConfig: serverConfig,
+            pathExists: pathExists
         };
         return result;
     }
@@ -104,54 +106,86 @@ export class App {
     }
 }
 
+// tslint:disable-next-line: max-classes-per-file
+export class Logger {
+    private colors = {
+        reset: '\x1b[0m',
+        red: '\x1b[31m',
+        green: '\x1b[32m',
+        yellow: '\x1b[33m'
+    };
+    private out: NodeJS.WriteStream;
+
+    constructor() {
+        this.out = process.stdout;
+    }
+
+    error(text: string, err?: Error): void {
+        let errMessage = '';
+        let errStack = '';
+        if (err) {
+            errMessage = err.message;
+            errStack = err.stack || '';
+        }
+        this.logWithColor(this.colors.red, `${text} ${errMessage} ${errStack}`)
+    }
+
+    logWithColor(color: string, text: string): void {
+        const coloredText = `${color}${this.getDatePrependedMessage(text)}\n${this.colors.reset}`;
+        this.out.write(coloredText);
+    }
+
+    warn(text: string): void {
+        this.logWithColor(this.colors.yellow, text);
+    }
+
+    log(text: string): void {
+        this.out.write(`${this.getDatePrependedMessage(text)}\n`);
+    }
+
+    private getDatePrependedMessage(text: string): string {
+        return `${this.getDateAsString()} : ${text}`;
+    }
+
+    private getDateAsString(): string {
+        const date = new Date().toISOString();
+        return date;
+    }
+}
+
+const logger = new Logger();
 const app = new App();
 app.start().then(obj => {
     if (obj.appConfig.logEvents) {
         attachToEvents(obj.httpFsServer.eventEmitter);
     }
-    logMessage(`Listening on ${obj.address.address}:${obj.address.port}`);
-    logMessage(`Serving path '${obj.serverConfig.path}' resolved to '${obj.httpFsServer.resolvedPath}'`);
-    logMessage(`App config ${JSON.stringify(obj.appConfig)}`);
-    logMessage(`Server config ${JSON.stringify(obj.serverConfig)}`);
+    logger.log(`Listening on ${obj.address.address}:${obj.address.port}`);
+    logger.log(`Serving path '${obj.serverConfig.path}' resolved to '${obj.httpFsServer.resolvedPath}'`);
+    if (!obj.pathExists) {
+        logger.warn(`WARNING: Path not found: '${obj.httpFsServer.resolvedPath}'`);
+    }
+    logger.log(`App config ${JSON.stringify(obj.appConfig)}`);
+    logger.log(`Server config ${JSON.stringify(obj.serverConfig)}`);
 }).catch(err => {
-    logError('Start failed: ', err);
+    logger.error('Start failed: ', err);
 });
 
 function attachToEvents(httpFsServerEventEmitter: EventEmitter): void {
     httpFsServerEventEmitter.on(EventName.requestArrived, data => {
         const eventData = <IRequestArrivedEventArgs>data;
-        logMessage(`${EventName.requestArrived} : ${eventData.request.method} ${eventData.request.url}` +
+        logger.log(`${EventName.requestArrived} : ${eventData.request.method} ${eventData.request.url}` +
             ` (requestId ${eventData.requestId})`);
     });
     httpFsServerEventEmitter.on(EventName.fileResolved, data => {
         const eventData = <IFileResolvedEventArgs>data;
-        logMessage(`${EventName.fileResolved} : ${eventData.path} (${eventData.contentType})` +
+        logger.log(`${EventName.fileResolved} : ${eventData.path} (${eventData.contentType})` +
             ` (requestId ${eventData.requestId})`);
     });
     httpFsServerEventEmitter.on(EventName.reponseSent, data => {
         const eventData = <IResponseSent>data;
-        logMessage(`${EventName.reponseSent} : finished for ${eventData.duration} ms : ${eventData.request.url}` +
+        logger.log(`${EventName.reponseSent} : finished for ${eventData.duration} ms : ${eventData.request.url}` +
             ` (requestId ${eventData.requestId})`);
     });
-}
-
-function logError(text: string, err?: Error): void {
-    let errMessage = '';
-    let errStack = '';
-    if (err) {
-        errMessage = err.message;
-        errStack = err.stack || '';
-    }
-    process.stderr.write(`${text} ${errMessage} ${errStack}\n`);
-}
-
-function logMessage(text: string): void {
-    process.stdout.write(`${getDateAsString()} : ${text}\n`);
-}
-
-function getDateAsString(): string {
-    const date = new Date().toISOString();
-    return date;
 }
 
 interface IAppConfig {
@@ -164,4 +198,5 @@ interface IStartResult {
     address: AddressInfo;
     appConfig: IAppConfig;
     serverConfig: IServerConfig;
+    pathExists: boolean;
 }
