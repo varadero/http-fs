@@ -30,9 +30,9 @@ Command line parameters:
 - `--directory-listing` - Will show directory content.
 - `--default-file-name` - The default file name to serve if the URL is a folder. Defaults to `index.html`. To switch off default file serving, set it to empty string inside quotes - `--default-file-name ""`. Will be ignored if `--directory-listing` is provided
 - `--not-found-file` - The file which must be served in case the requested file cannot be found. Can contain environment variables.
-- `--use-ssl` - If provided, files will be served over HTTPS.
-- `--ssl-cert-file` - Points to a file containing the certificate. Defaults to `cert.pem`. Can contain environment variables.
-- `--ssl-key-file` - Points to a file containing the certificate key. Defaults to `key.pem`. Can contain environment variables.
+- `--use-ssl` - If provided, files will be served over HTTPS. If optional `--ssl-cert-file` and `ssl-key-file` are not provided, internal self-signed certificate will be used.
+- `--ssl-cert-file` - Points to a file containing the certificate. Can contain environment variables. If provided, `ssl-key-file` must also be provided.
+- `--ssl-key-file` - Points to a file containing the certificate key. Can contain environment variables. If provided, `ssl-cert-file` must also be provided.
 - `--mime-map-file` - Points to a JSON file containing MIME map. Can contain only Windows-style (%NAME%) environment variables.
 - `--mime-map` - JSON (special characters like double quotes must be escaped - `\"`) representing MIME map of file extensions (without the dot in front of the extension) and HTTP Content-Type header value. The entries in the default MIME map with the same key as these provided in `--mime-map` will be overwritten. Defaults to empty JSON. Default MIME map contains the following entries:
 ```json
@@ -102,13 +102,13 @@ Command line parameters:
 
 `node path/to/http-fs/dist/index.js --host 192.168.0.1 --port 12345`
 
-- Serve with HTTPS using the default files `cert.pem` and `key.pem` in current folder (you can create `.pem` files using `openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem`)
+- Serve with HTTPS using internal self-signed certificate
 
 `node path/to/http-fs/dist/index.js --use-ssl`
 
-- Serve with HTTPS specifying certificate `.pem` files
+- Serve with HTTPS specifying certificate `.pem` files (you can create `.pem` files using `openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem`)
 
-`node path/to/http-fs/dist/index.js --use-ssl --ssl-cert-file "C:\some path\to\certificate files\cert.pem" --ssl-key-file "C:\some path\to\certificate files\key.pem"`
+`node path/to/http-fs/dist/index.js --use-ssl --ssl-cert-file "C:\path\to\certificate files\cert.pem" --ssl-key-file "C:\path\to\certificate files\key.pem"`
 
 - Serve with MIME map overwrites provided as JSON file
 

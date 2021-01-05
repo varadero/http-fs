@@ -30,11 +30,20 @@ export class HttpFsServer {
         this.basePath = cfg.path;
         this.resolvedPath = path.resolve(cfg.path);
         if (cfg.useSsl) {
-            // In case we need HTTPS, we must create server options by loading certificate files
-            const httpsServerOptions = <https.ServerOptions>{
-                cert: fs.readFileSync(path.resolve(cfg.sslCertFile)),
-                key: fs.readFileSync(path.resolve(cfg.sslKeyFile))
-            };
+            // In case we need HTTPS, we must create server options by loading certificate files or using default ones
+            let sslCert: Buffer;
+            let sslKey: Buffer;
+            if (cfg.sslCertFile && cfg.sslKeyFile) {
+                sslCert = fs.readFileSync(path.resolve(cfg.sslCertFile));
+                sslKey = fs.readFileSync(path.resolve(cfg.sslKeyFile));
+            } else {
+                sslCert = Buffer.from(this.getDefaultCertificate());
+                sslKey = Buffer.from(this.getDefaultCertificatePrivateKey());
+            }
+            const httpsServerOptions = {
+                cert: sslCert,
+                key: sslKey
+            } as https.ServerOptions;
 
             return new Promise<https.Server>(resolve => {
                 this.httpServer = https.createServer(httpsServerOptions, (req, res) => this.requestCallback(req, res))
@@ -343,6 +352,64 @@ export class HttpFsServer {
             response: response
         };
         this.eventEmitter.emit(EventName.reponseSent, args);
+    }
+
+    private getDefaultCertificate(): string {
+        return `-----BEGIN CERTIFICATE-----
+MIIDuDCCAqCgAwIBAgIJAK4E+YPzibXmMA0GCSqGSIb3DQEBCwUAMHExCzAJBgNV
+BAYTAkJHMRIwEAYDVQQIDAlsb2NhbGhvc3QxEjAQBgNVBAcMCWxvY2FsaG9zdDES
+MBAGA1UECgwJbG9jYWxob3N0MRIwEAYDVQQLDAlsb2NhbGhvc3QxEjAQBgNVBAMM
+CWxvY2FsaG9zdDAeFw0xODEyMjcxNTU4MzJaFw0yODEyMjQxNTU4MzJaMHExCzAJ
+BgNVBAYTAkJHMRIwEAYDVQQIDAlsb2NhbGhvc3QxEjAQBgNVBAcMCWxvY2FsaG9z
+dDESMBAGA1UECgwJbG9jYWxob3N0MRIwEAYDVQQLDAlsb2NhbGhvc3QxEjAQBgNV
+BAMMCWxvY2FsaG9zdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOlE
+aiO+/QBjPtYounPIvz0VGae/BXpb2NkHkJtr74Zb59CyghXw+osARYRsndPKvA57
+jO2kbtQ8+oXdVM4HJjRMr6ti4RmL6miNu7HcGJFIrqt9yShgPeqD+ahQ0fsTdAsk
+F6K/yTdkJdQ3rkRT5fh4EiEf09KvrOrG7qGOFKAdrQY4YoDQ6yXnHTHE3Wf0/TAt
+5ldvKL05aQ/5ivemkfQc8HPP7ibCWKq/v2wLITs/tmuS6oqh3d/ewkZKMbXR2Dhe
+I+wTmzefdiutbjLskDc2CIT1DlcxS2NKiFuju7Hd1JDKd9IJOXIk7yG2WHOM5TOK
+dmIf51mHUd/pTTfhxH0CAwEAAaNTMFEwHQYDVR0OBBYEFO6rFcKn75+5fG2128Re
+RqiA3p5UMB8GA1UdIwQYMBaAFO6rFcKn75+5fG2128ReRqiA3p5UMA8GA1UdEwEB
+/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAMv0vfPOWELntg9JDohrgzHRjsi+
+dEU4TaER6lzfBRAyyAbohg/Gd3FyW6WwfUwCICHe6kAC21wXcJgVXAKhypGqZsZ5
+dGMfuRQ7pM3Z2nRXTrHURXJeVXhafSpcut/Gs7TLxxJ59iGo1yg+ISvN2XRAUrAZ
+kVP6ZEhGbBNSqR+SGtjzt2IbXAKNNvxN8YpYTkNVr2GPDqnlwKX/FoXwp1MEAVYR
+hgGqpxWXM+ij+ktSJqaDKqInPJpdAVgRMAyhvx60FoUKaruLZnapWdsNDfGAzDzv
+AyutHtVAn4ndrePLviVn+mN5g6r0nW+1x1k4raLpPqM23982uATUTtRO5AQ=
+-----END CERTIFICATE-----
+`;
+    }
+
+    private getDefaultCertificatePrivateKey(): string {
+        return `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDpRGojvv0AYz7W
+KLpzyL89FRmnvwV6W9jZB5Cba++GW+fQsoIV8PqLAEWEbJ3TyrwOe4ztpG7UPPqF
+3VTOByY0TK+rYuEZi+pojbux3BiRSK6rfckoYD3qg/moUNH7E3QLJBeiv8k3ZCXU
+N65EU+X4eBIhH9PSr6zqxu6hjhSgHa0GOGKA0Osl5x0xxN1n9P0wLeZXbyi9OWkP
++Yr3ppH0HPBzz+4mwliqv79sCyE7P7ZrkuqKod3f3sJGSjG10dg4XiPsE5s3n3Yr
+rW4y7JA3NgiE9Q5XMUtjSohbo7ux3dSQynfSCTlyJO8htlhzjOUzinZiH+dZh1Hf
+6U034cR9AgMBAAECggEBAKbVH3RhbGGSmaZhiri0otH0/VxT6n8QoY7XMj12fOED
+alCA2zkGGKrBjvafGGIZZVaWVrzAFeQFmMeU/Mo9or1U+28AUS4MO6J7e/pBB/Eg
+ooxUckJGUwIfUbdn1kZUK3KsZZsov6i2H7gf+qsztg53EcBPGxhcPLfNf25cR7Qb
+J766iA+q8qfnhCCCj6hDMdCtPZmAprpO0/l/pvT2m3vSxvBKmrv4CSiz9cj13Azw
+Qi0RXjMB41DrofZ2JbRe8lj8mN2Xdh5bpLSi/IBEvf8ePnj3aEQcOpXRUvYewT+9
+Gu7Nehb+lcaTWrOiYP+WZm9FkEHnwVkfWvxOzEvQTwECgYEA+ST3NlERDthbP8gq
+/jNkZfa8ffEp93D+sjy290J/hpCyGA2L8L5/217hhnqcsFpYxfFcf9ol/Mx6F/OR
+epSloSZjTDy/XB5EAR4TcJ6+jM8ww4CgNOwzDV/rpgw55FEpqOZ9wP7De+KZ4KAV
+y/B4VrJjZw0pSby34VRncX4PXIkCgYEA76+bOz+uXtfpY/z8fLRwo7MXO+H53SDE
+iGCWrzWUtm9a7QGLMZXF72A+tLMl+ETvxTEYE12vLzpfn/TS3W9bzeaCuBUiEO1N
++6Cht9OHSdzgn7qWpRj/6OMaf98zAmyNv9okSvckHTihduVDoZrwsfPeqZKdYDfr
+Ez1JRZ/i81UCgYEAidKXJucFhq7NG6WBkwme+oDZmNn2GznYy4SmunWA0lHtEz07
+MrxPQm1kWN4vG6d/AFEamGd3KDd9Ow60ZZkhXto7iAr62NytRej7XAuU4ZQkJ6JZ
+/azEORvc4ghVZiY344VN/5tvTHL4KLimFiE6kMsyDenL80yAdBga+T+BA/ECgYBg
+BIs9Kv+hgwE+SwSiuG4/RelS1e4QxaW1tGvo+KAAjY9xTqMCVCuc/4NfRD07vfIH
+nuk0KN2bH9la7OrkRk4Sp/tJ3z1sZoRM/0aJq7WQw2lA07Cxptgt5XyiKTn4CKCo
+cK0FUwgmpJ8aUDHNtZIi170lVVSyTPRhGrYVrD1wmQKBgAd63OVhxy270bP5TtvW
+KGY8R5/RYe+YwbsLJptJIPverPxwfMRW+oTBB+h0j118oElkdUvzqETRjKkipa/T
+GBYD4L3ZEFm0M9OYilYVRDJsmFr0Zu3Xruhp4R/ch8dbIOhYHNGM8QGnVwnhj83K
+LK2gxP6dXFmDeVXAUmvo9YjV
+-----END PRIVATE KEY-----
+`;
     }
 }
 
