@@ -7,18 +7,15 @@ name: Manual workflow
 on:
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "greet"
-  greet:
-    # The type of runner that the job will run on
+  sonarcloud:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: SonarCloud Scan
-        # You may pin to the exact commit or the version.
-        # uses: SonarSource/sonarcloud-github-action@f4c6e4d91ea9785ec823eaeed459042606123402
-        uses: SonarSource/sonarcloud-github-action@v1.4
-        env:
-          SONAR_TOKEN: 73563f970c6c8dc0417ca30c498f0062d135e456
+    - uses: actions/checkout@v2
+      with:
+        # Disabling shallow clone is recommended for improving relevancy of reporting
+        fetch-depth: 0
+    - name: SonarCloud Scan
+      uses: sonarsource/sonarcloud-github-action@master
+      env:
+        SONAR_TOKEN: 73563f970c6c8dc0417ca30c498f0062d135e456
