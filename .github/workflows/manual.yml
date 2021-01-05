@@ -20,3 +20,5 @@ jobs:
         # You may pin to the exact commit or the version.
         # uses: SonarSource/sonarcloud-github-action@f4c6e4d91ea9785ec823eaeed459042606123402
         uses: SonarSource/sonarcloud-github-action@v1.4
+        env:
+          SONAR_TOKEN: 73563f970c6c8dc0417ca30c498f0062d135e456
