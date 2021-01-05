@@ -15,15 +15,17 @@ export class App {
             httpPort: 80,
             httpsPort: 443,
             path: '.'
-        },
-        ssl: {
-            sslCertFile: 'cert.pem',
-            sslKeyFile: 'key.pem'
         }
     };
 
     async start(): Promise<IStartResult> {
         const args = process.argv.slice(2);
+        const argErrors = this.getArgumentsErrors(args);
+        if (argErrors.length > 0) {
+            return {
+                errors: argErrors
+            } as IStartResult;
+        }
         const appConfig = this.createConfig(args);
         const serverConfig = this.createServerConfigWithDefaults(appConfig.serverConfig);
         const httpFsServer = new HttpFsServer(serverConfig);
@@ -34,9 +36,21 @@ export class App {
             appConfig: appConfig,
             httpFsServer: httpFsServer,
             serverConfig: serverConfig,
-            pathExists: pathExists
+            pathExists: pathExists,
+            errors: []
         };
         return result;
+    }
+
+    private getArgumentsErrors(args: string[]): string[] {
+        const errors: string[] = [];
+        if (args.indexOf(ArgName.sslCertFile) >= 0 && args.indexOf(ArgName.sslKeyFile) === -1) {
+            errors.push(`When ${ArgName.sslCertFile} argument is provided, ${ArgName.sslKeyFile} is required`);
+        }
+        if (args.indexOf(ArgName.sslKeyFile) >= 0 && args.indexOf(ArgName.sslCertFile) === -1) {
+            errors.push(`When ${ArgName.sslKeyFile} argument is provided, ${ArgName.sslCertFile} is required`);
+        }
+        return errors;
     }
 
     private createConfig(args: string[]): IAppConfig {
@@ -45,30 +59,30 @@ export class App {
         };
         for (let i = 0; i < args.length; i++) {
             const arg = args[i];
-            if (arg === '--path') {
+            if (arg === ArgName.path) {
                 config.serverConfig.path = this.resolveEnvironmentVariables(args[++i]);
-            } else if (arg === '--default-file-name') {
+            } else if (arg === ArgName.defaultFileName) {
                 config.serverConfig.defaultFileName = args[++i];
-            } else if (arg === '--use-ssl') {
+            } else if (arg === ArgName.useSsl) {
                 config.serverConfig.useSsl = true;
-            } else if (arg === '--ssl-cert-file') {
+            } else if (arg === ArgName.sslCertFile) {
                 config.serverConfig.sslCertFile = args[++i];
-            } else if (arg === '--ssl-key-file') {
+            } else if (arg === ArgName.sslKeyFile) {
                 config.serverConfig.sslKeyFile = args[++i];
-            } else if (arg === '--host') {
+            } else if (arg === ArgName.host) {
                 config.serverConfig.host = args[++i];
-            } else if (arg === '--port') {
+            } else if (arg === ArgName.port) {
                 config.serverConfig.port = +args[++i];
-            } else if (arg === '--mime-map') {
+            } else if (arg === ArgName.mimeMap) {
                 config.serverConfig.mimeMap = JSON.parse(args[++i]);
-            } else if (arg === '--mime-map-file') {
+            } else if (arg === ArgName.mimeMapFile) {
                 const mimeMapFile = this.resolveEnvironmentVariables(args[++i]);
                 config.serverConfig.mimeMap = JSON.parse(readFileSync(mimeMapFile).toString());
-            } else if (arg === '--not-found-file') {
+            } else if (arg === ArgName.notFoundFile) {
                 config.serverConfig.notFoundFile = this.resolveEnvironmentVariables(args[++i]);
-            } else if (arg === '--log-events') {
+            } else if (arg === ArgName.logEvents) {
                 config.logEvents = true;
-            } else if (arg === '--directory-listing') {
+            } else if (arg === ArgName.directoryListing) {
                 config.serverConfig.directoryListing = true;
             } else {
                 throw new Error(`Unknown argument ${arg}`);
@@ -87,8 +101,8 @@ export class App {
             notFoundFile: sourceConfig.notFoundFile,
             path: sourceConfig.path || this.defaults.serve.path,
             port: baseConfig.port || inferredDefaultPort,
-            sslCertFile: sourceConfig.sslCertFile || this.defaults.ssl.sslCertFile,
-            sslKeyFile: sourceConfig.sslKeyFile || this.defaults.ssl.sslKeyFile,
+            sslCertFile: sourceConfig.sslCertFile,
+            sslKeyFile: sourceConfig.sslKeyFile,
             useSsl: sourceConfig.useSsl || false,
             directoryListing: sourceConfig.directoryListing || false
         };
@@ -156,6 +170,11 @@ export class Logger {
 const logger = new Logger();
 const app = new App();
 app.start().then(obj => {
+    if (obj.errors.length > 0) {
+        logger.error('Startup errors');
+        obj.errors.forEach(x => logger.error(x));
+        return;
+    }
     if (obj.appConfig.logEvents) {
         attachToEvents(obj.httpFsServer.eventEmitter);
     }
@@ -199,4 +218,20 @@ interface IStartResult {
     appConfig: IAppConfig;
     serverConfig: IServerConfig;
     pathExists: boolean;
+    errors: string[];
+}
+
+const enum ArgName {
+    path = '--path',
+    defaultFileName = '--default-file-name',
+    useSsl = '--use-ssl',
+    sslCertFile = '--ssl-cert-file',
+    sslKeyFile = '--ssl-key-file',
+    host = '--host',
+    port = '--port',
+    mimeMap = '--mime-map',
+    mimeMapFile = '--mime-map-file',
+    notFoundFile = '--not-found-file',
+    logEvents = '--log-events',
+    directoryListing = '--directory-listing'
 }
