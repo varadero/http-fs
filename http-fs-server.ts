@@ -353,7 +353,7 @@ export class HttpFsServer {
             requestId: requestId,
             response: response
         };
-        this.eventEmitter.emit(EventName.reponseSent, args);
+        this.eventEmitter.emit(EventName.responseSent, args);
     }
 
     private getDefaultCertificate(): string {
@@ -431,7 +431,7 @@ export interface IServerConfig {
 export const enum EventName {
     requestArrived = 'request-arrived',
     fileResolved = 'file-resolved',
-    reponseSent = 'reponse-sent'
+    responseSent = 'response-sent'
 }
 
 export interface IRequestArrivedEventArgs {

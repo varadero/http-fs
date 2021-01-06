@@ -211,9 +211,9 @@ function attachToEvents(httpFsServerEventEmitter: EventEmitter): void {
         logger.log(`${EventName.fileResolved} : ${eventData.path} (${eventData.contentType})` +
             ` (requestId ${eventData.requestId})`);
     });
-    httpFsServerEventEmitter.on(EventName.reponseSent, data => {
+    httpFsServerEventEmitter.on(EventName.responseSent, data => {
         const eventData = data as IResponseSent;
-        logger.log(`${EventName.reponseSent} : finished for ${eventData.duration} ms : ${eventData.request.url}` +
+        logger.log(`${EventName.responseSent} : finished for ${eventData.duration} ms : ${eventData.request.url}` +
             ` (requestId ${eventData.requestId})`);
     });
 }
