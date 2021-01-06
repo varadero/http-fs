@@ -8,7 +8,7 @@ import {
 
 export class App {
 
-    private defaults = {
+    private readonly defaults = {
         serve: {
             defaultFileName: 'index.html',
             host: '127.0.0.1',
@@ -54,32 +54,43 @@ export class App {
     }
 
     private createConfig(args: string[]): IAppConfig {
-        const config = <IAppConfig>{
-            serverConfig: <IServerConfig>{}
+        const config: IAppConfig = {
+            serverConfig: {} as IServerConfig,
+            logEvents: false
         };
-        for (let i = 0; i < args.length; i++) {
+        let i = 0;
+        while (i < args.length) {
             const arg = args[i];
             if (arg === ArgName.path) {
-                config.serverConfig.path = this.resolveEnvironmentVariables(args[++i]);
+                i++;
+                config.serverConfig.path = this.resolveEnvironmentVariables(args[i]);
             } else if (arg === ArgName.defaultFileName) {
-                config.serverConfig.defaultFileName = args[++i];
+                i++;
+                config.serverConfig.defaultFileName = args[i];
             } else if (arg === ArgName.useSsl) {
                 config.serverConfig.useSsl = true;
             } else if (arg === ArgName.sslCertFile) {
-                config.serverConfig.sslCertFile = args[++i];
+                i++;
+                config.serverConfig.sslCertFile = args[i];
             } else if (arg === ArgName.sslKeyFile) {
-                config.serverConfig.sslKeyFile = args[++i];
+                i++;
+                config.serverConfig.sslKeyFile = args[i];
             } else if (arg === ArgName.host) {
-                config.serverConfig.host = args[++i];
+                i++;
+                config.serverConfig.host = args[i];
             } else if (arg === ArgName.port) {
-                config.serverConfig.port = +args[++i];
+                i++;
+                config.serverConfig.port = +args[i];
             } else if (arg === ArgName.mimeMap) {
-                config.serverConfig.mimeMap = JSON.parse(args[++i]);
+                i++;
+                config.serverConfig.mimeMap = JSON.parse(args[i]);
             } else if (arg === ArgName.mimeMapFile) {
-                const mimeMapFile = this.resolveEnvironmentVariables(args[++i]);
+                i++;
+                const mimeMapFile = this.resolveEnvironmentVariables(args[i]);
                 config.serverConfig.mimeMap = JSON.parse(readFileSync(mimeMapFile).toString());
             } else if (arg === ArgName.notFoundFile) {
-                config.serverConfig.notFoundFile = this.resolveEnvironmentVariables(args[++i]);
+                i++;
+                config.serverConfig.notFoundFile = this.resolveEnvironmentVariables(args[i]);
             } else if (arg === ArgName.logEvents) {
                 config.logEvents = true;
             } else if (arg === ArgName.directoryListing) {
@@ -87,6 +98,7 @@ export class App {
             } else {
                 throw new Error(`Unknown argument ${arg}`);
             }
+            i++;
         }
         return config;
     }
@@ -114,7 +126,7 @@ export class App {
             return value;
         }
         const replaced = value.replace(/%([^%]+)%/g, (foundSubstring: string, ...args: any[]) => {
-            return <string>process.env[args[0]];
+            return process.env[args[0]] as string;
         });
         return replaced;
     }
@@ -122,13 +134,13 @@ export class App {
 
 // tslint:disable-next-line: max-classes-per-file
 export class Logger {
-    private colors = {
+    private readonly colors = {
         reset: '\x1b[0m',
         red: '\x1b[31m',
         green: '\x1b[32m',
         yellow: '\x1b[33m'
     };
-    private out: NodeJS.WriteStream;
+    private readonly out: NodeJS.WriteStream;
 
     constructor() {
         this.out = process.stdout;
@@ -162,8 +174,7 @@ export class Logger {
     }
 
     private getDateAsString(): string {
-        const date = new Date().toISOString();
-        return date;
+        return new Date().toISOString();
     }
 }
 
@@ -191,17 +202,17 @@ app.start().then(obj => {
 
 function attachToEvents(httpFsServerEventEmitter: EventEmitter): void {
     httpFsServerEventEmitter.on(EventName.requestArrived, data => {
-        const eventData = <IRequestArrivedEventArgs>data;
+        const eventData = data as IRequestArrivedEventArgs;
         logger.log(`${EventName.requestArrived} : ${eventData.request.method} ${eventData.request.url}` +
             ` (requestId ${eventData.requestId})`);
     });
     httpFsServerEventEmitter.on(EventName.fileResolved, data => {
-        const eventData = <IFileResolvedEventArgs>data;
+        const eventData = data as IFileResolvedEventArgs;
         logger.log(`${EventName.fileResolved} : ${eventData.path} (${eventData.contentType})` +
             ` (requestId ${eventData.requestId})`);
     });
     httpFsServerEventEmitter.on(EventName.reponseSent, data => {
-        const eventData = <IResponseSent>data;
+        const eventData = data as IResponseSent;
         logger.log(`${EventName.reponseSent} : finished for ${eventData.duration} ms : ${eventData.request.url}` +
             ` (requestId ${eventData.requestId})`);
     });
