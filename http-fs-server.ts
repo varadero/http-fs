@@ -12,13 +12,13 @@ export class HttpFsServer {
 
     private httpServer: https.Server | http.Server | null = null;
     private basePath = '';
-    private mimeMap: { [key: string]: string } = {};
+    private readonly mimeMap: { [key: string]: string } = {};
     private totalRequests = 0;
 
     /**
      * Creates new instance using provided configuration
      */
-    constructor(private config: IServerConfig) {
+    constructor(private readonly config: IServerConfig) {
         this.mimeMap = this.createMimeMap(config.mimeMap);
     }
 
@@ -48,14 +48,14 @@ export class HttpFsServer {
             return new Promise<https.Server>(resolve => {
                 this.httpServer = https.createServer(httpsServerOptions, (req, res) => this.requestCallback(req, res))
                     .listen(cfg.port, cfg.host, () => {
-                        resolve(<https.Server>this.httpServer);
+                        resolve(this.httpServer as https.Server);
                     });
             });
         } else {
             return new Promise<http.Server>(resolve => {
                 this.httpServer = http.createServer((req, res) => this.requestCallback(req, res))
                     .listen(cfg.port, cfg.host, () => {
-                        resolve(<http.Server>this.httpServer);
+                        resolve(this.httpServer as https.Server);
                     });
             });
         }
@@ -76,10 +76,12 @@ export class HttpFsServer {
         this.emitRequestArrived(request, response, requestId);
 
         if (!this.isHttpMethodSupported(request.method)) {
-            return this.respondMethodNotAllowed(response);
+            this.respondMethodNotAllowed(response);
+            return;
         }
         if (!this.isUrlSafe(request.url)) {
-            return this.respondNotFound(requestId, request, response);
+            this.respondNotFound(requestId, request, response);
+            return;
         }
         this.serveUrl(request.url, requestId, request, response);
     }
@@ -88,8 +90,7 @@ export class HttpFsServer {
         requestUrl = requestUrl || '';
         const urlPathName = url.parse(requestUrl).pathname || '';
         const decodedUrl = decodeURI(urlPathName);
-        const desiredFile = path.join(this.basePath, decodedUrl);
-        return desiredFile;
+        return path.join(this.basePath, decodedUrl);
     }
 
     private serveUrl(
@@ -117,14 +118,17 @@ export class HttpFsServer {
         fs.stat(desiredPath, (err, stats) => {
             if (err) {
                 this.closeReadStream(fileReadStream);
-                return this.respondNotFound(requestId, request, response);
+                this.respondNotFound(requestId, request, response);
+                return;
             }
             if (stats.isDirectory()) {
                 if (this.config.directoryListing) {
-                    return this.respondDirectoryListing(requestId, request, response, desiredPath);
+                    this.respondDirectoryListing(requestId, request, response, desiredPath);
+                    return;
                 }
                 if (!this.config.defaultFileName) {
-                    return this.respondNotFound(requestId, request, response);
+                    this.respondNotFound(requestId, request, response);
+                    return;
                 }
                 desiredPath = path.join(desiredPath, this.config.defaultFileName);
             }
@@ -140,7 +144,7 @@ export class HttpFsServer {
             response.setHeader('Content-Type', mimeType);
             fileReadStream.on('error', (fileReadErr: Error) => {
                 this.closeReadStream(fileReadStream);
-                if ((<any>fileReadErr).code === 'ENOENT') {
+                if ((fileReadErr as any).code === 'ENOENT') {
                     // File was not found. This could happen if fs.stats was executed on an existing file/directory
                     // but it was later changed to a non existing file before fs.createReadStream is called
                     // It happens if URL is a directory and the default file name was added to it which could not exists
@@ -154,8 +158,7 @@ export class HttpFsServer {
     }
 
     private createFileReadStream(filePath: string): fs.ReadStream {
-        const stream = fs.createReadStream(filePath);
-        return stream;
+        return fs.createReadStream(filePath);
     }
 
     private closeReadStream(stream?: fs.ReadStream): void {
@@ -171,8 +174,7 @@ export class HttpFsServer {
             // Files without extensions will map to . map
             ext = '.';
         }
-        const contentType = this.mimeMap.hasOwnProperty(ext) ? this.mimeMap[ext] : this.mimeMap['*'];
-        return contentType;
+        return this.mimeMap.hasOwnProperty(ext) ? this.mimeMap[ext] : this.mimeMap['*'];
     }
 
     private isHttpMethodSupported(httpMethod?: string): boolean {
@@ -189,7 +191,8 @@ export class HttpFsServer {
     ): void {
         fs.readdir(directory, (err, files) => {
             if (err) {
-                return this.respondInternalServerError(response);
+                this.respondInternalServerError(response);
+                return;
             }
             const dirEntries: IDirectoryEntry[] = [];
             for (const file of files) {
@@ -267,7 +270,7 @@ export class HttpFsServer {
         }
         content += '<h2>Files</h2>'
         content += this.getEntriesHtml(files);
-        const html = `
+        return `
         <!doctype html>
         <html lang="en">
         <head>
@@ -291,7 +294,6 @@ export class HttpFsServer {
         </body>
         </html>
         `;
-        return html;
     }
 
     private createMimeMap(overwrites?: { [key: string]: string }): { [key: string]: string } {
