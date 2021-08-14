@@ -80,6 +80,7 @@ export class HttpFsServer {
             return;
         }
         if (!this.isUrlSafe(request.url)) {
+            this.emitUnsafeUrl(request.url);
             this.respondNotFound(requestId, request, response);
             return;
         }
@@ -115,9 +116,11 @@ export class HttpFsServer {
             this.emitResponseSent(request, response, endTime - startTime, requestId);
         });
         let desiredPath = this.getDesiredPath(requestUrl);
+        this.emitDesiredPath(desiredPath);
         fs.stat(desiredPath, (err, stats) => {
             if (err) {
                 this.closeReadStream(fileReadStream);
+                this.emitErr(err);
                 this.respondNotFound(requestId, request, response);
                 return;
             }
@@ -213,7 +216,7 @@ export class HttpFsServer {
 
     private respondNotFound(requestId: number, request: http.IncomingMessage, response: http.ServerResponse): void {
         if (this.config.notFoundFile) {
-            const fileExists = fs.existsSync(this.config.notFoundFile);
+            const fileExists = fs.existsSync(path.join(this.resolvedPath, this.config.notFoundFile));
             if (fileExists) {
                 this.serveUrl(this.config.notFoundFile, requestId, request, response);
                 return;
@@ -341,6 +344,18 @@ export class HttpFsServer {
         this.eventEmitter.emit(EventName.fileResolved, args);
     }
 
+    private emitDesiredPath(desiredPath: string): void {
+        this.eventEmitter.emit(EventName.desiredPath, desiredPath);
+    }
+
+    private emitUnsafeUrl(unsafeUrl?: string): void {
+        this.eventEmitter.emit(EventName.unsafeUrl, unsafeUrl);
+    }
+
+    private emitErr(err: NodeJS.ErrnoException): void {
+        this.eventEmitter.emit(EventName.err, err);
+    }
+
     private emitResponseSent(
         request: http.IncomingMessage,
         response: http.ServerResponse,
@@ -431,7 +446,10 @@ export interface IServerConfig {
 export const enum EventName {
     requestArrived = 'request-arrived',
     fileResolved = 'file-resolved',
-    responseSent = 'response-sent'
+    responseSent = 'response-sent',
+    desiredPath = 'desired-path',
+    unsafeUrl = 'unsafe-url',
+    err = 'err'
 }
 
 export interface IRequestArrivedEventArgs {

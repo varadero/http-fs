@@ -206,6 +206,9 @@ function attachToEvents(httpFsServerEventEmitter: EventEmitter): void {
         logger.log(`${EventName.requestArrived} : ${eventData.request.method} ${eventData.request.url}` +
             ` (requestId ${eventData.requestId})`);
     });
+    httpFsServerEventEmitter.on(EventName.desiredPath, data => {
+        logger.log(`${EventName.desiredPath}: ${data}`);
+    });
     httpFsServerEventEmitter.on(EventName.fileResolved, data => {
         const eventData = data as IFileResolvedEventArgs;
         logger.log(`${EventName.fileResolved} : ${eventData.path} (${eventData.contentType})` +
@@ -215,6 +218,12 @@ function attachToEvents(httpFsServerEventEmitter: EventEmitter): void {
         const eventData = data as IResponseSent;
         logger.log(`${EventName.responseSent} : finished for ${eventData.duration} ms : ${eventData.request.url}` +
             ` (requestId ${eventData.requestId})`);
+    });
+    httpFsServerEventEmitter.on(EventName.unsafeUrl, data => {
+        logger.log(`${EventName.unsafeUrl}: ${data}`);
+    });
+    httpFsServerEventEmitter.on(EventName.err, data => {
+        logger.error(`${EventName.err}: ${data}`);
     });
 }
 
