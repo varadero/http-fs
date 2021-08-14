@@ -1,6 +1,6 @@
 {
   "name": "http-fs",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "HTTP server for file serving",
   "main": "index.js",
   "scripts": {
