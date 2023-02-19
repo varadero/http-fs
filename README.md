@@ -57,6 +57,7 @@ Command line parameters:
 }
 ```
 - `--log-events` - Logs some of the request and response events
+- `--response-header` - Adds specified response header to success responses (this excludes HTTP 404's for example). The value after this parameter should be enclosed in quotes and must contain the header name and its value in format `header-name:value` - the name of the header followed by `:` followed by the value. Multiple `--response-header` can be added in case multiple response headers are needed
 
 ### MIME map specifics
 - Files without extensions are referenced with `.` map
@@ -125,3 +126,7 @@ Command line parameters:
 - Serve with MIME map disabling all non-specified files (`"*":""`)
 
 `node path/to/http-fs/dist/index.js --mime-map "{\"*\":\"\"}"`
+
+- Serve with 2 custom headers added (`permissions-policy` and `X-Some-Name`)
+
+`node path/to/http-fs/dist/index.js --path ./dist --response-header "permissions-policy:geolocation=(),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()" --response-header "X-Some-Name:some value"`
