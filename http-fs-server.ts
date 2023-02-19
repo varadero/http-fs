@@ -145,6 +145,7 @@ export class HttpFsServer {
             this.emitFileResolved(desiredPath, mimeType, requestId);
             fileReadStream = this.createFileReadStream(desiredPath);
             response.setHeader('Content-Type', mimeType);
+            this.setCustomHeaders(response, this.config.responseHeaders);
             fileReadStream.on('error', (fileReadErr: Error) => {
                 this.closeReadStream(fileReadStream);
                 if ((fileReadErr as any).code === 'ENOENT') {
@@ -158,6 +159,13 @@ export class HttpFsServer {
             });
             fileReadStream.pipe(response);
         });
+    }
+
+    private setCustomHeaders(response: http.ServerResponse, customHeaders?: Record<string, string>): void {
+        if (!customHeaders) {
+            return;
+        }
+        Object.keys(customHeaders).forEach(headerName => response.setHeader(headerName, customHeaders[headerName]));
     }
 
     private createFileReadStream(filePath: string): fs.ReadStream {
@@ -441,6 +449,7 @@ export interface IServerConfig {
     mimeMap?: { [key: string]: string };
     notFoundFile: string;
     directoryListing: boolean;
+    responseHeaders?: Record<string, string>;
 }
 
 export const enum EventName {

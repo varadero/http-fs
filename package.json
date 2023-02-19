@@ -1,6 +1,6 @@
 {
   "name": "http-fs",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "HTTP server for file serving",
   "main": "index.js",
   "scripts": {
@@ -23,7 +23,6 @@
   "devDependencies": {
     "@types/node": "^13.11.1",
     "tslint": "^6.1.1",
-    "typescript": "^3.8.3"
-  },
-  "dependencies": {}
+    "typescript": "4.9.5"
+  }
 }

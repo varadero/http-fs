@@ -95,6 +95,11 @@ export class App {
                 config.logEvents = true;
             } else if (arg === ArgName.directoryListing) {
                 config.serverConfig.directoryListing = true;
+            } else if (arg === ArgName.responseHeader) {
+                config.serverConfig.responseHeaders ||= {};
+                i++;
+                const parts = args[i].split(':');
+                config.serverConfig.responseHeaders[parts[0]] = parts[1]
             } else {
                 throw new Error(`Unknown argument ${arg}`);
             }
@@ -116,7 +121,8 @@ export class App {
             sslCertFile: sourceConfig.sslCertFile,
             sslKeyFile: sourceConfig.sslKeyFile,
             useSsl: sourceConfig.useSsl || false,
-            directoryListing: sourceConfig.directoryListing || false
+            directoryListing: sourceConfig.directoryListing || false,
+            responseHeaders: baseConfig.responseHeaders
         };
         return config;
     }
@@ -253,5 +259,6 @@ const enum ArgName {
     mimeMapFile = '--mime-map-file',
     notFoundFile = '--not-found-file',
     logEvents = '--log-events',
-    directoryListing = '--directory-listing'
+    directoryListing = '--directory-listing',
+    responseHeader = '--response-header'
 }
